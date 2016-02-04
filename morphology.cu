@@ -89,7 +89,7 @@ static void _dispatchMorphOp(const dataType* pSrc, Npp32s nSrcStep, dataType* pD
             processed = 1;
         }
         // Vertical vHGW
-        else if (maskSize.height == 1) {
+        else if (maskSize.width == 1) {
             if (MOP == ERODE) {
               PRINTF("Vertical Erosion: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
               PRINTF("Erosion: Offset (%d,%d)\n", offsetX, offsetY);
@@ -100,11 +100,11 @@ static void _dispatchMorphOp(const dataType* pSrc, Npp32s nSrcStep, dataType* pD
 
             }
 
-            _globalVHGW<dataType, MOP, VERTICAL>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, maskSize.width, borderSize);
+            _globalVHGW<dataType, MOP, VERTICAL>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, maskSize.height, borderSize);
             processed = 1;
         }
         // Horizontal vHGW
-        else if (maskSize.width == 1) {
+        else if (maskSize.height == 1) {
             if (MOP == ERODE) {
               PRINTF("Horizontal Erosion: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
               PRINTF("Erosion: Offset (%d,%d)\n", offsetX, offsetY);
@@ -114,7 +114,7 @@ static void _dispatchMorphOp(const dataType* pSrc, Npp32s nSrcStep, dataType* pD
               PRINTF("Dilate: Offset (%d,%d)\n", offsetX, offsetY);
 
             }
-            _globalVHGW<dataType, MOP, HORIZONTAL>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, maskSize.height,  borderSize);
+            _globalVHGW<dataType, MOP, HORIZONTAL>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, maskSize.width,  borderSize);
             processed = 1;
         }
     }

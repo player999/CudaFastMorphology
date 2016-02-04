@@ -6,7 +6,7 @@
 #define BLOCKCOUNT 8
 
 lcuda8u streldata[13] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-lcudaSize strelsizes[] = {{1,13}};
+lcudaSize strelsizes[] = {{13,1}};
 int strelbinary[] = {0};
 
 static int getBlockSize()
