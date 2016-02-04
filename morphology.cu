@@ -19,6 +19,15 @@
 #include "morphology.cuh"
 #include "sharedmem.cuh"
 
+#define PRINT_ON
+
+#ifndef PRINTF
+# ifndef PRINT_ON
+#  define PRINTF(...) ((void)0)
+# else
+#  define PRINTF(fmt,...) (printf(fmt, ## __VA_ARGS__))
+# endif
+#endif
 
 // 1.0f uint = 1065353216
 #define FLOAT_MAX 1
@@ -81,16 +90,30 @@ static void _dispatchMorphOp(const dataType* pSrc, Npp32s nSrcStep, dataType* pD
         }
         // Vertical vHGW
         else if (maskSize.height == 1) {
-            //PRINTF("Vertical Erosion: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
-            //PRINTF("Erosion: Offset (%d,%d)\n", offsetX, offsetY);
+            if (MOP == ERODE) {
+              PRINTF("Vertical Erosion: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
+              PRINTF("Erosion: Offset (%d,%d)\n", offsetX, offsetY);
+            }
+            else {
+              PRINTF("Vertical Dilate: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
+              PRINTF("Dilate: Offset (%d,%d)\n", offsetX, offsetY);
+
+            }
 
             _globalVHGW<dataType, MOP, VERTICAL>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, maskSize.width, borderSize);
             processed = 1;
+        }
         // Horizontal vHGW
-        } else if (maskSize.width == 1) {
-            //PRINTF("Horizontal Erosion: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
-            //PRINTF("Erosion: Offset (%d,%d)\n", offsetX, offsetY);
+        else if (maskSize.width == 1) {
+            if (MOP == ERODE) {
+              PRINTF("Horizontal Erosion: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
+              PRINTF("Erosion: Offset (%d,%d)\n", offsetX, offsetY);
+            }
+            else {
+              PRINTF("Horizontal Dilate: SE Size (%dx%d)\n", maskSize.width, maskSize.height);
+              PRINTF("Dilate: Offset (%d,%d)\n", offsetX, offsetY);
 
+            }
             _globalVHGW<dataType, MOP, HORIZONTAL>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, maskSize.height,  borderSize);
             processed = 1;
         }
@@ -98,7 +121,7 @@ static void _dispatchMorphOp(const dataType* pSrc, Npp32s nSrcStep, dataType* pD
 
     // Non-flat and other arbitrary SE
     if (!processed) {
-        //PRINTF("Generic!\n");
+        PRINTF("Generic!\n");
         _globalGeneric<dataType, MOP>(pSrc + srcBorderOffset, nSrcStep, pDst, nDstStep, srcROI, pMask, maskSize, maskHeight, borderSize, anchor);
     }
 
@@ -133,9 +156,9 @@ EXTERN void performDilation_8u(const Npp8u * pSrc, Npp32s nSrcStep, Npp8u * pDst
 
 template <class matrixType, class dataType>
 static void _lcudaCopyBorder(matrixType src, matrixType dst, int color, int offsetX, int offsetY) {
-    //PRINTF("SRC: %d %d\n", src.width, src.height);
-    //PRINTF("DST: %d %d\n", dst.width, dst.height);
-    //PRINTF("Offsets x %d, y %d\n", offsetX, offsetY);
+    PRINTF("SRC: %d %d\n", src.width, src.height);
+    PRINTF("DST: %d %d\n", dst.width, dst.height);
+    PRINTF("Offsets x %d, y %d\n", offsetX, offsetY);
 
     int realPitch = dst.pitch / sizeof(dataType);
 

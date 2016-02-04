@@ -2,6 +2,16 @@
 
 #define BORDER_VALUE 255
 
+#define PRINT_ON
+
+#ifndef PRINTF
+# ifndef PRINT_ON
+#  define PRINTF(...) ((void)0)
+# else
+#  define PRINTF(fmt,...) (printf(fmt, ## __VA_ARGS__))
+# endif
+#endif
+
 
 
 template <class dataType, morphOperation MOP>
@@ -178,8 +188,8 @@ NppStatus _globalVHGW(const dataType * img, Npp32s imgStep, dataType * result,
     const unsigned int width = oSizeROI.width;
     const unsigned int height = oSizeROI.height;
 
-    //PRINTF("width %d, height %d\n", width, height);
-    //PRINTF("Border (w: %d , h: %d)\n", borderSize.width, borderSize.height);
+    PRINTF("width %d, height %d\n", width, height);
+    PRINTF("Border (w: %d , h: %d)\n", borderSize.width, borderSize.height);
 
     unsigned int steps;
     if (DIRECTION == VERTICAL) {
@@ -189,7 +199,8 @@ NppStatus _globalVHGW(const dataType * img, Npp32s imgStep, dataType * result,
 
         _verticalVHGWKernel<dataType, MOP><<<gridSize,blockSize, 8*2*size*sizeof(float)>>>(img,
             imgStep,result, resultStep, width, height, size, borderSize);
-    } else { // HORIZONTAL
+    }
+    else { // HORIZONTAL
         steps = (height+size-1)/size;
         dim3 gridSize((width+128-1)/128, (steps+2-1)/2);
         dim3 blockSize(128,2);

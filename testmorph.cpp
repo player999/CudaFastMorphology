@@ -3,10 +3,10 @@
 #include "lcudatypes.h"
 
 #define BLOCKSIZE 64
-#define BLOCKCOUNT 16
+#define BLOCKCOUNT 8
 
 lcuda8u streldata[13] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-lcudaSize strelsizes[] = {{13,1}};
+lcudaSize strelsizes[] = {{1,13}};
 int strelbinary[] = {0};
 
 static int getBlockSize()
