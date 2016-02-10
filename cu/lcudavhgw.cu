@@ -128,7 +128,7 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep, dataType
 }
 
 #else
-
+# if 1
 template <class dataType, morphOperation MOP>
 __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
                                       dataType *result, int resultStep,
@@ -158,6 +158,8 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
     imGxStepPtr = imGxPtr + startx;
     imHxStepPtr = imHxPtr + startx;
 
+
+    printf("111\n");
     if (pred) {
       asm("prefetch.global.L1 [%0];"::"r"(srcptr));
       localSrc[0] = srcptr[0];
@@ -226,7 +228,62 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
       dstptr[12] = max(imGxStepPtr[12], imHxStepPtr[12]);
     }
 }
+# else
+template <class dataType, morphOperation MOP>
+__global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
+                                      dataType *result, int resultStep,
+                                      unsigned int width, unsigned int height,
+                                      unsigned int size, NppiSize borderSize)
+{
+    #define LINEC 13
+    #define LINES 1040
+    __shared__ dataType imHx[LINEC * LINES];
+    __shared__ dataType imGx[LINEC * LINES];
+    dataType *imHxPtr, *imGxPtr;
+    dataType *imHxStepPtr, *imGxStepPtr;
+    uint32_t ptroffset;
+    uint32_t j;
 
+    dataType localSrc[13];
+    uint32_t startx = __umul24(size, threadIdx.x);
+    uint32_t imline = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
+    dataType *dstptr;
+    const dataType *srcptr;
+    char pred = !(imline >= height) && !((startx - size) >= width);
+
+    //Load data from global memory to shared memory
+    ptroffset = threadIdx.y * LINES;
+    imGxPtr = imGx + ptroffset;
+    imHxPtr = imHx + ptroffset;
+    srcptr = img + imline * imgStep + startx;
+    imGxStepPtr = imGxPtr + startx;
+    imHxStepPtr = imHxPtr + startx;
+
+    if (pred) {
+      asm("prefetch.global.L1 [%0];"::"r"(srcptr));
+      for (int i = 0; i < size; i++) localSrc[i] = srcptr[i];
+      //Processing
+      dataType gxMax, hxMax;
+
+      imGxStepPtr[0] = gxMax = localSrc[0];
+      for (int i = 1; i < size; i++) imGxStepPtr[i] = gxMax = max(gxMax, localSrc[i]);
+
+      imHxStepPtr[12] = hxMax = localSrc[12];
+      for (int i = 11; i >= 0; i--) imHxStepPtr[i] = hxMax = max(hxMax, localSrc[i]);
+    }
+
+    __syncthreads();
+    if(pred) {
+      //Save data fromshared memory to global memory
+      imHxStepPtr -= 6;
+      imGxStepPtr += 6;
+      dstptr = result + imline * resultStep + startx;
+      j = 12;
+      do {*(dstptr++) = max(*(imGxStepPtr++), *(imHxStepPtr++)); } while(j--);
+    }
+}
+
+# endif
 #endif
 
 /*{
@@ -322,9 +379,69 @@ NppStatus _globalVHGW(const dataType * img, Npp32s imgStep, dataType * result,
         gridSize = dim3(1, linesblock);
         printf("Block size (%d,%d)\n", steps, lines);
         printf("Grid size (%d,%d)\n", 1, linesblock);
+#if 0
         _horizontalVHGWKernel<dataType, MOP><<<gridSize,blockSize>>>
             (img, imgStep,result, resultStep, width, height, size, borderSize);
+#else
+        CUmodule module;
+        CUfunction function;
+        CUresult err;
+
+        const char* module_file = "horizontal13.ptx";
+        const char* kernel_name = "vhgw_horizontal13";
+        const char *errstr;
+
+        printf("Loading ptx!\n");
+        err = cuModuleLoad(&module, module_file);
+        if (CUDA_SUCCESS != err) {
+          printf("Failed to load module\n");
+          cuGetErrorString(err, &errstr);
+          printf("%s\n", errstr);
+          exit(255);
+        }
+
+        printf("Loading function!\n");
+        err = cuModuleGetFunction(&function, module, kernel_name);
+        if (CUDA_SUCCESS != err) {
+          printf("Failed to load function\n");
+          cuGetErrorString(err, &errstr);
+          printf("%s\n", errstr);
+          exit(255);
+        }
+
+        printf("Launching kernel!\n");
+
+        /*
+           CUresult cuLaunchKernel (
+           CUfunction f,
+           unsigned int  gridDimX, unsigned int  gridDimY, unsigned int  gridDimZ,
+           unsigned int  blockDimX, unsigned int  blockDimY, unsigned int  blockDimZ,
+           unsigned int  sharedMemBytes,
+           CUstream hStream,
+           void** kernelParams,
+           void** extra )
+        */
+
+        cuParamSetSize(function, 7 * 4);
+        cuParamSetv(function, 0, (void *)&img, 4);
+        cuParamSetv(function, 4, (void *)&imgStep, 4);
+        cuParamSetv(function, 8, (void *)&result, 4);
+        cuParamSetv(function, 12, (void *)&resultStep, 4);
+        cuParamSetv(function, 16, (void *)&width, 4);
+        cuParamSetv(function, 20, (void *)&height, 4);
+        cuParamSetv(function, 24, (void *)&size, 4);
+        cuFuncSetBlockShape (function, steps, lines, 1);
+        cuFuncSetSharedSize (function, 24000);
+        cuLaunchGrid (function, 1, linesblock);
+
+        if (CUDA_SUCCESS != err) {
+          printf("Failed to launch function\n");
+          cuGetErrorString(err, &errstr);
+          printf("%d: %s\n", err, errstr);
+          exit(255);
+        }
         cudaDeviceSynchronize();
+#endif
     }
 
     // check for error

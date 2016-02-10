@@ -31,7 +31,7 @@ morphology.ptx: lcudavhgw.cu lcuda3x3.cu lcudaGenericKernel.cu
 
 
 $(LIBTARGET): $(C_OBJS) $(CU_OBJS)
-	$(NVCC) -shared -o $(LIBTARGET) $(C_OBJS) $(CU_OBJS) -L/usr/local/cuda/lib -lnppi
+	$(NVCC) -shared -o $(LIBTARGET) $(C_OBJS) $(CU_OBJS) -L/usr/local/cuda/lib -lnppi -lcuda
 
 $(TESTTARGET): testmorph.o
 	$(CXX) -o $@  testmorph.o $(TESTLIBS)
