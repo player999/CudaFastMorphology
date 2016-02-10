@@ -132,17 +132,17 @@ static void _dispatchMorphOp(const dataType* pSrc, Npp32s nSrcStep, dataType* pD
 /*
  * Public functions to perform erosion or dilation.
  */
-void performDilation(const lcudaFloat * pSrc, Npp32s nSrcStep, lcudaFloat * pDst, Npp32s nDstStep, NppiSize srcROI,
-                    const Npp8u * pMask, const float* maskHeight, NppiSize maskSize, NppiPoint anchor,
-                        NppiSize borderSize, char isFlat, int seBinary) {
-    _dispatchMorphOp<lcudaFloat, DILATE>(pSrc, nSrcStep, pDst, nDstStep, srcROI, pMask, maskHeight, maskSize, anchor, borderSize, isFlat, seBinary);
-}
+//void performDilation(const lcudaFloat * pSrc, Npp32s nSrcStep, lcudaFloat * pDst, Npp32s nDstStep, NppiSize srcROI,
+//                    const Npp8u * pMask, const float* maskHeight, NppiSize maskSize, NppiPoint anchor,
+//                        NppiSize borderSize, char isFlat, int seBinary) {
+//    _dispatchMorphOp<lcudaFloat, DILATE>(pSrc, nSrcStep, pDst, nDstStep, srcROI, pMask, maskHeight, maskSize, anchor, borderSize, isFlat, seBinary);
+//}
 
-void performErosion(const lcudaFloat * pSrc, Npp32s nSrcStep, lcudaFloat * pDst, Npp32s nDstStep, NppiSize srcROI,
-                    const Npp8u * pMask, const float* maskHeight, NppiSize maskSize, NppiPoint anchor,
-                        NppiSize borderSize, char isFlat, int seBinary) {
-    _dispatchMorphOp<lcudaFloat, ERODE>(pSrc, nSrcStep, pDst, nDstStep, srcROI, pMask, maskHeight, maskSize, anchor, borderSize, isFlat, seBinary);
-}
+//void performErosion(const lcudaFloat * pSrc, Npp32s nSrcStep, lcudaFloat * pDst, Npp32s nDstStep, NppiSize srcROI,
+//                    const Npp8u * pMask, const float* maskHeight, NppiSize maskSize, NppiPoint anchor,
+//                        NppiSize borderSize, char isFlat, int seBinary) {
+//    _dispatchMorphOp<lcudaFloat, ERODE>(pSrc, nSrcStep, pDst, nDstStep, srcROI, pMask, maskHeight, maskSize, anchor, borderSize, isFlat, seBinary);
+//}
 
 EXTERN void performErosion_8u(const Npp8u * pSrc, Npp32s nSrcStep, Npp8u * pDst, Npp32s nDstStep, NppiSize srcROI,
                    const Npp8u * pMask, const float * maskHeight, NppiSize maskSize, NppiPoint anchor, NppiSize borderSize, char isFlat, int seBinary) {

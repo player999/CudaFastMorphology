@@ -70,6 +70,8 @@ __global__ void _verticalVHGWKernel(const dataType *img, int imgStep, dataType *
     }
 }
 
+#if 0
+
 template <class dataType, morphOperation MOP>
 __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep, dataType *result,
                                     int resultStep, unsigned int width, unsigned int height,
@@ -124,6 +126,109 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep, dataType
         }
     }
 }
+
+#else
+
+template <class dataType, morphOperation MOP>
+__global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
+                                      dataType *result, int resultStep,
+                                      unsigned int width, unsigned int height,
+                                      unsigned int size, NppiSize borderSize)
+{
+    #define LINEC 13
+    #define LINES 1040
+    __shared__ dataType imHx[LINEC * LINES];
+    __shared__ dataType imGx[LINEC * LINES];
+    dataType *imHxPtr, *imGxPtr;
+    dataType *imHxStepPtr, *imGxStepPtr;
+    uint32_t ptroffset;
+
+    dataType localSrc[13];
+    uint32_t startx = __umul24(size, threadIdx.x);
+    uint32_t imline = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
+    dataType *dstptr;
+    const dataType *srcptr;
+    char pred = !(imline >= height) && !((startx - size) >= width);
+
+    //Load data from global memory to shared memory
+    ptroffset = threadIdx.y * LINES;
+    imGxPtr = imGx + ptroffset;
+    imHxPtr = imHx + ptroffset;
+    srcptr = img + imline * imgStep + startx;
+    imGxStepPtr = imGxPtr + startx;
+    imHxStepPtr = imHxPtr + startx;
+
+    if (pred) {
+      asm("prefetch.global.L1 [%0];"::"r"(srcptr));
+      localSrc[0] = srcptr[0];
+      localSrc[1] = srcptr[1];
+      localSrc[2] = srcptr[2];
+      localSrc[3] = srcptr[3];
+      localSrc[4] = srcptr[4];
+      localSrc[5] = srcptr[5];
+      localSrc[6] = srcptr[6];
+      localSrc[7] = srcptr[7];
+      localSrc[8] = srcptr[8];
+      localSrc[9] = srcptr[9];
+      localSrc[10] = srcptr[10];
+      localSrc[11] = srcptr[11];
+      localSrc[12] = srcptr[12];
+
+      //Processing
+      dataType gxMax, hxMax;
+      imGxStepPtr[0] = gxMax = localSrc[0];
+      imGxStepPtr[1] = gxMax = max(gxMax, localSrc[1]);
+      imGxStepPtr[2] = gxMax = max(gxMax, localSrc[2]);
+      imGxStepPtr[3] = gxMax = max(gxMax, localSrc[3]);
+      imGxStepPtr[4] = gxMax = max(gxMax, localSrc[4]);
+      imGxStepPtr[5] = gxMax = max(gxMax, localSrc[5]);
+      imGxStepPtr[6] = gxMax = max(gxMax, localSrc[6]);
+      imGxStepPtr[7] = gxMax = max(gxMax, localSrc[7]);
+      imGxStepPtr[8] = gxMax = max(gxMax, localSrc[8]);
+      imGxStepPtr[9] = gxMax = max(gxMax, localSrc[9]);
+      imGxStepPtr[10] = gxMax = max(gxMax, localSrc[10]);
+      imGxStepPtr[11] = gxMax = max(gxMax, localSrc[11]);
+      imGxStepPtr[12] = gxMax = max(gxMax, localSrc[12]);
+
+      imHxStepPtr[12] = hxMax = localSrc[12];
+      imHxStepPtr[11] = hxMax = max(hxMax, localSrc[11]);
+      imHxStepPtr[10] = hxMax = max(hxMax, localSrc[10]);
+      imHxStepPtr[9] = hxMax = max(hxMax, localSrc[9]);
+      imHxStepPtr[8] = hxMax = max(hxMax, localSrc[8]);
+      imHxStepPtr[7] = hxMax = max(hxMax, localSrc[7]);
+      imHxStepPtr[6] = hxMax = max(hxMax, localSrc[6]);
+      imHxStepPtr[5] = hxMax = max(hxMax, localSrc[5]);
+      imHxStepPtr[4] = hxMax = max(hxMax, localSrc[4]);
+      imHxStepPtr[3] = hxMax = max(hxMax, localSrc[3]);
+      imHxStepPtr[2] = hxMax = max(hxMax, localSrc[2]);
+      imHxStepPtr[1] = hxMax = max(hxMax, localSrc[1]);
+      imHxStepPtr[0] = hxMax = max(hxMax, localSrc[0]);
+    }
+
+    __syncthreads();
+    if(pred) {
+      //Save data fromshared memory to global memory
+      imHxStepPtr -= 6;
+      imGxStepPtr += 6;
+      dstptr = result + imline * resultStep + startx;
+      dstptr[0] = max(imGxStepPtr[0], imHxStepPtr[0]);
+      dstptr[1] = max(imGxStepPtr[1], imHxStepPtr[1]);
+      dstptr[2] = max(imGxStepPtr[2], imHxStepPtr[2]);
+      dstptr[3] = max(imGxStepPtr[3], imHxStepPtr[3]);
+      dstptr[4] = max(imGxStepPtr[4], imHxStepPtr[4]);
+      dstptr[5] = max(imGxStepPtr[5], imHxStepPtr[5]);
+      dstptr[6] = max(imGxStepPtr[6], imHxStepPtr[6]);
+      dstptr[7] = max(imGxStepPtr[7], imHxStepPtr[7]);
+      dstptr[8] = max(imGxStepPtr[8], imHxStepPtr[8]);
+      dstptr[9] = max(imGxStepPtr[9], imHxStepPtr[9]);
+      dstptr[10] = max(imGxStepPtr[10], imHxStepPtr[10]);
+      dstptr[11] = max(imGxStepPtr[11], imHxStepPtr[11]);
+      dstptr[12] = max(imGxStepPtr[12], imHxStepPtr[12]);
+    }
+}
+
+#endif
+
 /*{
     dataType minarray[512];
     dataType *inputRow, *lineOut;
@@ -201,12 +306,25 @@ NppStatus _globalVHGW(const dataType * img, Npp32s imgStep, dataType * result,
             (img, imgStep,result, resultStep, width, height, size, borderSize);
     }
     else { // HORIZONTAL
-        steps = (height+size-1)/size;
-        dim3 gridSize((width+2-1)/2,(steps+128-1)/128);
-        dim3 blockSize(2,128);
+        int linesblock;
+        int lines;
+        dim3 gridSize;
+        dim3 blockSize;
 
+        steps = width / size;
+
+        lines = 16384 / width;
+        if (lines * steps > 1024) lines = 1024 / steps;
+
+        linesblock = (height % lines) ? height / lines + 1 : height / lines;
+
+        blockSize = dim3(steps, lines);
+        gridSize = dim3(1, linesblock);
+        printf("Block size (%d,%d)\n", steps, lines);
+        printf("Grid size (%d,%d)\n", 1, linesblock);
         _horizontalVHGWKernel<dataType, MOP><<<gridSize,blockSize>>>
             (img, imgStep,result, resultStep, width, height, size, borderSize);
+        cudaDeviceSynchronize();
     }
 
     // check for error
