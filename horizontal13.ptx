@@ -40,6 +40,7 @@
         mov.u32         rgridy, %ctaid.y;
         mov.u32         rtidy, %tid.y;
 
+//Calculate startx and imline
         mul24.lo.u32    startx, rfsize, rtidx;
         mul24.lo.u32    tmps1, rgridy, rbdimy;
         add.s32         imline, rtidy, tmps1;
@@ -60,13 +61,14 @@
         bra.uni         BB20_1;
 
 BB20_1:
+//Calculate source pointer
         mad.lo.s32      tmps1, imline, rimgstep, startx;
         cvta.to.global.u32      tmps2, rimgptr;
         add.s32         srcptr, tmps2, tmps1;
 
 //Try to prefetch
         add.s32         tmps3, rimgptr, tmps1;
-        prefetch.global.L1 [tmps3];
+        prefetch.global.L1 [srcptr];
 
 //Load source data
         ld.global.u8    %rs1, [srcptr];
