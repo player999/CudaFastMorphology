@@ -147,9 +147,12 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
     dataType localGx[13], localHx[13];
     uint32_t startx = __umul24(size, threadIdx.x);
     uint32_t imline = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
-    dataType *dstptr;
     const dataType *srcptr;
     char pred = !(imline >= height) && !((startx - size) >= width);
+    const uint32_t *ptr32;
+    uint32_t src32[4];
+    uint8_t *ptr8;
+    dataType *dstptr;
 
     //Load data from global memory to shared memory
     ptroffset = threadIdx.y * LINES;
@@ -158,23 +161,31 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
     srcptr = img + imline * imgStep + startx;
     imGxStepPtr = imGxPtr + startx;
     imHxStepPtr = imHxPtr + startx;
-
+    ptr32 = (const uint32_t *) ((uint32_t)srcptr & (0xFFFFFFFC));
+    ptr8 = (uint8_t *) src32;
 
     if (pred) {
       asm("prefetch.global.L1 [%0];"::"r"(srcptr));
-      localSrc[0] = srcptr[0];
-      localSrc[1] = srcptr[1];
-      localSrc[2] = srcptr[2];
-      localSrc[3] = srcptr[3];
-      localSrc[4] = srcptr[4];
-      localSrc[5] = srcptr[5];
-      localSrc[6] = srcptr[6];
-      localSrc[7] = srcptr[7];
-      localSrc[8] = srcptr[8];
-      localSrc[9] = srcptr[9];
-      localSrc[10] = srcptr[10];
-      localSrc[11] = srcptr[11];
-      localSrc[12] = srcptr[12];
+      src32[0] = ptr32[0];
+      src32[1] = ptr32[1];
+      src32[2] = ptr32[2];
+      src32[3] = ptr32[3];
+
+      ptr8 += (srcptr-(dataType *)ptr32);
+
+      localSrc[0] = ptr8[0];
+      localSrc[1] = ptr8[1];
+      localSrc[2] = ptr8[2];
+      localSrc[3] = ptr8[3];
+      localSrc[4] = ptr8[4];
+      localSrc[5] = ptr8[5];
+      localSrc[6] = ptr8[6];
+      localSrc[7] = ptr8[7];
+      localSrc[8] = ptr8[8];
+      localSrc[9] = ptr8[9];
+      localSrc[10] = ptr8[10];
+      localSrc[11] = ptr8[11];
+      localSrc[12] = ptr8[12];
 
       //Processing
       imGxStepPtr[0] = localGx[0] = localSrc[0];
@@ -209,8 +220,6 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
     __syncthreads();
     if(pred) {
       //Save data fromshared memory to global memory
-      imHxStepPtr -= 6;
-      imGxStepPtr += 6;
       dstptr = result + imline * resultStep + startx;
       dstptr[0] = max(localGx[6], imHxStepPtr[0]);
       dstptr[1] = max(localGx[7], imHxStepPtr[1]);
