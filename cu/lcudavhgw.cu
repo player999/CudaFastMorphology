@@ -431,16 +431,19 @@ NppStatus _globalVHGW(const dataType * img, Npp32s imgStep, dataType * result,
         cuParamSetv(function, 20, (void *)&height, 4);
         cuParamSetv(function, 24, (void *)&size, 4);
         cuFuncSetBlockShape (function, steps, lines, 1);
-        cuFuncSetSharedSize (function, 24000);
-        cuLaunchGrid (function, 1, linesblock);
+        cuFuncSetSharedSize (function, 32864);
 
-        if (CUDA_SUCCESS != err) {
-          printf("Failed to launch function\n");
-          cuGetErrorString(err, &errstr);
-          printf("%d: %s\n", err, errstr);
-          exit(255);
+        for(int i = 0; i < 100; i++) {
+          cuLaunchGrid (function, 1, linesblock);
+
+          if (CUDA_SUCCESS != err) {
+            printf("Failed to launch function\n");
+            cuGetErrorString(err, &errstr);
+            printf("%d: %s\n", err, errstr);
+            exit(255);
+          }
+          cudaDeviceSynchronize();
         }
-        cudaDeviceSynchronize();
 #endif
     }
 
