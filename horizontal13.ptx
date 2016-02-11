@@ -24,8 +24,8 @@
         .reg .s32       rgmax, rhmax, rmax;
         .reg .s32       dst;
 
-        .shared .align 1 .b8 imHx[13520];
-        .shared .align 1 .b8 imGx[13520];
+        .shared .align 8 .b8 imHx[16640]; //80 * 16 * 13
+        .shared .align 8 .b8 imGx[16640];
 
 //Load kernel parameters
         ld.param.u32    rimgptr, [imgptr];
@@ -54,7 +54,8 @@
         and.pred        %p1, %p2, %p3;
 
 //Offsets for rhx and rgx
-        mad.lo.s32      tmps2, rtidy, 1040, startx;
+        mul24.lo.u32    tmps0, 16, rtidx;
+        mad.lo.s32      tmps2, rtidy, 1280, tmps0;//80*16
         mov.u32         tmps1, imGx;
         add.s32         rgx, tmps1, tmps2;
         mov.u32         tmps1, imHx;
@@ -154,54 +155,54 @@ BB20_3:
         mad.lo.s32      tmps2, imline, rresstep, startx;
         add.s32         dst, tmps1, tmps2;
 
-        ld.shared.u8    rhmax, [rhx+-6];
+        ld.shared.u8    rhmax, [rhx+-9];
         max.s32         rmax, rgmax6, rhmax;
         st.global.u8    [dst+ 0], rmax;
 
-        ld.shared.u8    rhmax, [rhx+-5];
+        ld.shared.u8    rhmax, [rhx+-8];
         max.s32         rmax, rgmax7, rhmax;
         st.global.u8    [dst+ 1], rmax;
 
-        ld.shared.u8    rhmax, [rhx+-4];
+        ld.shared.u8    rhmax, [rhx+-7];
         max.s32         rmax, rgmax8, rhmax;
         st.global.u8    [dst+ 2], rmax;
 
-        ld.shared.u8    rhmax, [rhx+-3];
+        ld.shared.u8    rhmax, [rhx+-6];
         max.s32         rmax, rgmax9, rhmax;
         st.global.u8    [dst+ 3], rmax;
 
-        ld.shared.u8    rhmax, [rhx+-2];
+        ld.shared.u8    rhmax, [rhx+-5];
         max.s32         rmax, rgmax10, rhmax;
         st.global.u8    [dst+ 4], rmax;
 
-        ld.shared.u8    rhmax, [rhx+-1];
+        ld.shared.u8    rhmax, [rhx+-4];
         max.s32         rmax, rgmax11, rhmax;
         st.global.u8    [dst+ 5], rmax;
 
         max.s32         rmax, rgmax12, rhmax0;
         st.global.u8    [dst+ 6], rmax;
 
-        ld.shared.u8    rgmax, [rgx+13];
+        ld.shared.u8    rgmax, [rgx+16];
         max.s32         rmax, rgmax, rhmax1;
         st.global.u8    [dst+ 7], rmax;
 
-        ld.shared.u8    rgmax, [rgx+14];
+        ld.shared.u8    rgmax, [rgx+17];
         max.s32         rmax, rgmax, rhmax2;
         st.global.u8    [dst+ 8], rmax;
 
-        ld.shared.u8    rgmax, [rgx+15];
+        ld.shared.u8    rgmax, [rgx+18];
         max.s32         rmax, rgmax, rhmax3;
         st.global.u8    [dst+ 9], rmax;
 
-        ld.shared.u8    rgmax, [rgx+16];
+        ld.shared.u8    rgmax, [rgx+19];
         max.s32         rmax, rgmax, rhmax4;
         st.global.u8    [dst+10], rmax;
 
-        ld.shared.u8    rgmax, [rgx+17];
+        ld.shared.u8    rgmax, [rgx+20];
         max.s32         rmax, rgmax, rhmax5;
         st.global.u8    [dst+11], rmax;
 
-        ld.shared.u8    rgmax, [rgx+18];
+        ld.shared.u8    rgmax, [rgx+21];
         max.s32         rmax, rgmax, rhmax6;
         st.global.u8    [dst+12], rmax;
 BB20_4:
