@@ -166,10 +166,10 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
 
     if (pred) {
       asm("prefetch.global.L1 [%0];"::"r"(srcptr));
-      src32[0] = ptr32[0];
-      src32[1] = ptr32[1];
-      src32[2] = ptr32[2];
-      src32[3] = ptr32[3];
+      src32[0] = __ldg(ptr32 + 0);
+      src32[1] = __ldg(ptr32 + 1);
+      src32[2] = __ldg(ptr32 + 2);
+      src32[3] = __ldg(ptr32 + 3);
 
       ptr8 += (srcptr-(dataType *)ptr32);
 
@@ -238,7 +238,7 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
 }
 # else
 template <class dataType, morphOperation MOP>
-__global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
+__global__ void _horizontalVHGWKernel(const  dataType *img, int imgStep,
                                       dataType *result, int resultStep,
                                       unsigned int width, unsigned int height,
                                       unsigned int size, NppiSize borderSize)
@@ -256,7 +256,7 @@ __global__ void _horizontalVHGWKernel(const dataType *img, int imgStep,
     uint32_t startx = __umul24(size, threadIdx.x);
     uint32_t imline = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
     dataType *dstptr;
-    const dataType *srcptr;
+    const __restrict__ dataType *srcptr;
     char pred = !(imline >= height) && !((startx - size) >= width);
 
     //Load data from global memory to shared memory
